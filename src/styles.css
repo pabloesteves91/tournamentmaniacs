@@ -234,6 +234,20 @@ td {
 }
 
 @media (max-width: 920px) {
+  .shell {
+    width: min(1200px, 98vw);
+    margin: 0.8rem auto 1.2rem;
+  }
+
+  .panel {
+    padding: 0.8rem;
+  }
+
+  .hero-logo {
+    width: 84px;
+    height: 84px;
+  }
+
   .hero.compact {
     grid-template-columns: auto 1fr;
   }
@@ -245,5 +259,43 @@ td {
 
   .split.two-col {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-logo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .btn.small {
+    width: auto;
+  }
+
+  .button-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  table {
+    min-width: 460px;
+  }
+
+  .match-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .match-controls select,
+  .match-controls .btn.small {
+    grid-column: 1 / -1;
   }
 }

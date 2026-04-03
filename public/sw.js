@@ -1,8 +1,14 @@
 const CACHE_NAME = "maniacs-tcg-v1";
-const URLS_TO_CACHE = ["/", "/index.html", "/manifest.webmanifest", "/logo.png"];
+const getBasePath = () => {
+  const scope = self.registration?.scope ?? "/";
+  const url = new URL(scope);
+  return url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
+};
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(URLS_TO_CACHE)));
+  const base = getBasePath();
+  const urlsToCache = [base, `${base}index.html`, `${base}manifest.webmanifest`, `${base}logo.png`];
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
 });
 
 self.addEventListener("fetch", (event) => {
@@ -22,7 +28,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cloned));
           return response;
         })
-        .catch(() => caches.match("/index.html"));
+        .catch(() => caches.match(`${getBasePath()}index.html`));
     }),
   );
 });

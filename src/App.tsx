@@ -60,6 +60,7 @@ const defaultConfig: TournamentConfig = {
 type MatchDraft = Record<string, MatchInput>;
 
 export default function App() {
+  const logoUrl = `${import.meta.env.BASE_URL}logo.png`;
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -319,7 +320,7 @@ export default function App() {
     return (
       <div className="shell">
         <header className="hero">
-          <img src="/logo.png" alt="Maniacs" className="hero-logo" />
+          <img src={logoUrl} alt="Maniacs" className="hero-logo" />
           <div>
             <h1>Maniacs Pokémon TCG Tracker</h1>
             <p>Official-style Swiss, Top Cut, pairings, standings, and exports.</p>
@@ -490,7 +491,7 @@ export default function App() {
   return (
     <div className="shell">
       <header className="hero compact">
-        <img src="/logo.png" alt="Maniacs" className="hero-logo" />
+        <img src={logoUrl} alt="Maniacs" className="hero-logo" />
         <div>
           <h1>{tournament.config.name}</h1>
           <p>
