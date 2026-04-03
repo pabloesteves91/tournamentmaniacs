@@ -249,6 +249,15 @@ td {
   flex-wrap: wrap;
 }
 
+.history-round {
+  border: 1px solid #1e3d5e;
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: rgba(13, 30, 50, 0.6);
+  display: grid;
+  gap: 0.6rem;
+}
+
 @media (max-width: 920px) {
   .shell {
     margin: 0.8rem auto 1.2rem;

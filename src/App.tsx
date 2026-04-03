@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { computeStandings as computeStandingsLocal } from "./lib/engine/standings";
 import { getDivisionStructure, getTournamentDivisions } from "./lib/engine/rules";
 import {
+  amendMatchResult,
   clearTournament,
   createTournament,
   exportBackupJson,
@@ -231,6 +232,47 @@ export default function App() {
     }
   };
 
+  const onAmendMatch = async (match: Match) => {
+    if (!tournament) {
+      return;
+    }
+
+    const draft = matchDrafts[match.id] ?? {
+      outcome: match.result?.outcome ?? ("A_WIN" as const),
+      gameWinsA: match.result?.gameWinsA ?? (tournament.config.matchFormat === "BO3" ? 2 : 1),
+      gameWinsB: match.result?.gameWinsB ?? 0,
+    };
+
+    const affectedRound = tournament.rounds.find((round) => round.matchIds.includes(match.id));
+    if (!affectedRound) {
+      setError("Round for this match was not found");
+      return;
+    }
+
+    const hasFutureRounds = tournament.rounds.some((round) => round.number > affectedRound.number);
+    if (hasFutureRounds) {
+      const confirmed = window.confirm(
+        `This correction changes Round ${affectedRound.number}. All later rounds will be reset and must be re-generated. Continue?`,
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    try {
+      setError(null);
+      const updated = await amendMatchResult(match.id, draft);
+      setTournament(updated);
+      setMatchDrafts((previous) => {
+        const next = { ...previous };
+        delete next[match.id];
+        return next;
+      });
+    } catch (cause) {
+      setAppError(cause);
+    }
+  };
+
   const onToggleDropPlayer = async (playerId: string, dropped: boolean) => {
     if (!tournament) {
       return;
@@ -243,6 +285,18 @@ export default function App() {
     } catch (cause) {
       setAppError(cause);
     }
+  };
+
+  const getPlayerName = (playerId: string | null): string => {
+    if (!tournament) {
+      return "Unknown";
+    }
+
+    if (!playerId) {
+      return "BYE";
+    }
+
+    return tournament.players.find((player) => player.id === playerId)?.name ?? "Unknown";
   };
 
   const onClearTournament = async () => {
@@ -528,6 +582,122 @@ export default function App() {
           })}
         </div>
         <p className="muted">BYE rule active: odd player count gets BYE as match win points.</p>
+      </section>
+
+      <section className="panel">
+        <h2>Round History & Corrections</h2>
+        <p className="muted">
+          If a previous result was entered incorrectly, correct it here. Later rounds are reset automatically to keep
+          pairings and standings valid.
+        </p>
+
+        {roundsByDivision.map((round) => {
+          const roundMatches = tournament.matches
+            .filter((match) => round.matchIds.includes(match.id))
+            .sort((a, b) => a.tableNumber - b.tableNumber);
+
+          return (
+            <div key={round.id} className="history-round">
+              <h3>
+                Round {round.number} • {round.phase.toUpperCase()} • {round.status.toUpperCase()}
+              </h3>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Table</th>
+                      <th>Match</th>
+                      <th>Result</th>
+                      <th>Correction</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roundMatches.map((match) => {
+                      const draft = matchDrafts[match.id] ?? {
+                        outcome: match.result?.outcome ?? ("A_WIN" as const),
+                        gameWinsA: match.result?.gameWinsA ?? (tournament.config.matchFormat === "BO3" ? 2 : 1),
+                        gameWinsB: match.result?.gameWinsB ?? 0,
+                      };
+
+                      return (
+                        <tr key={match.id}>
+                          <td>{match.tableNumber}</td>
+                          <td>
+                            {getPlayerName(match.playerAId)} vs {getPlayerName(match.playerBId)}
+                          </td>
+                          <td>{match.result?.outcome ?? "PENDING"}</td>
+                          <td>
+                            {match.isBye ? (
+                              <span className="muted">Auto BYE</span>
+                            ) : (
+                              <div className="match-controls">
+                                <select
+                                  value={draft.outcome}
+                                  onChange={(event) =>
+                                    setMatchDrafts((previous) => ({
+                                      ...previous,
+                                      [match.id]: {
+                                        ...draft,
+                                        outcome: event.target.value as MatchInput["outcome"],
+                                      },
+                                    }))
+                                  }
+                                >
+                                  <option value="A_WIN">Player A wins</option>
+                                  <option value="B_WIN">Player B wins</option>
+                                  {round.phase === "swiss" ? <option value="TIE">Tie</option> : null}
+                                </select>
+
+                                {tournament.config.matchFormat === "BO3" ? (
+                                  <>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={2}
+                                      value={draft.gameWinsA ?? 2}
+                                      onChange={(event) =>
+                                        setMatchDrafts((previous) => ({
+                                          ...previous,
+                                          [match.id]: {
+                                            ...draft,
+                                            gameWinsA: Number(event.target.value),
+                                          },
+                                        }))
+                                      }
+                                    />
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={2}
+                                      value={draft.gameWinsB ?? 0}
+                                      onChange={(event) =>
+                                        setMatchDrafts((previous) => ({
+                                          ...previous,
+                                          [match.id]: {
+                                            ...draft,
+                                            gameWinsB: Number(event.target.value),
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </>
+                                ) : null}
+
+                                <button className="btn small" onClick={() => onAmendMatch(match)}>
+                                  Correct
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       <section className="panel">

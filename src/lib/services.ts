@@ -328,6 +328,60 @@ export const reportMatchResult = async (matchId: string, resultInput: MatchInput
   return saveAndReturn(nextTournament);
 };
 
+export const amendMatchResult = async (matchId: string, resultInput: MatchInput): Promise<Tournament> => {
+  const tournament = await loadActiveTournament();
+  if (!tournament) {
+    throw new Error("No active tournament");
+  }
+
+  const match = tournament.matches.find((item) => item.id === matchId);
+  if (!match) {
+    throw new Error("Match not found");
+  }
+
+  if (match.isBye) {
+    throw new Error("Bye matches are auto-resolved");
+  }
+
+  const affectedRound = getRoundByMatchId(tournament, matchId);
+  if (!affectedRound) {
+    throw new Error("Round not found");
+  }
+
+  const normalized = normalizeMatchResult(tournament, matchId, resultInput);
+
+  // If an old result changes, later rounds are no longer valid and must be replayed.
+  const roundsToDrop = tournament.rounds.filter((round) => round.number > affectedRound.number);
+  const roundIdsToDrop = new Set(roundsToDrop.map((round) => round.id));
+  const matchIdsToDrop = new Set(roundsToDrop.flatMap((round) => round.matchIds));
+
+  const keptRounds = tournament.rounds.filter((round) => !roundIdsToDrop.has(round.id));
+  const keptMatches = tournament.matches
+    .filter((item) => !matchIdsToDrop.has(item.id))
+    .map((item) => {
+      if (item.id !== matchId) {
+        return item;
+      }
+
+      return {
+        ...item,
+        result: {
+          outcome: normalized.outcome,
+          gameWinsA: normalized.gameWinsA,
+          gameWinsB: normalized.gameWinsB,
+          reportedAt: new Date().toISOString(),
+        },
+      };
+    });
+
+  return saveAndReturn({
+    ...tournament,
+    rounds: keptRounds,
+    matches: keptMatches,
+    status: "running",
+  });
+};
+
 export const computeStandings = async (tournamentId: string, division: Division): Promise<StandingRow[]> => {
   const tournament = await loadActiveTournament();
   if (!tournament || tournament.id !== tournamentId) {
