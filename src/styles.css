@@ -13,6 +13,13 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: "Segoe UI", "Trebuchet MS", sans-serif;
@@ -28,8 +35,9 @@ p {
 }
 
 .shell {
-  width: min(1200px, 96vw);
+  width: min(1200px, 100%);
   margin: 1.2rem auto 2rem;
+  padding: 0 0.6rem;
   display: grid;
   gap: 1rem;
 }
@@ -73,6 +81,7 @@ p {
   padding: 1rem;
   display: grid;
   gap: 0.8rem;
+  min-width: 0;
 }
 
 .grid {
@@ -172,11 +181,15 @@ textarea {
 }
 
 .table-scroll {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   min-width: 560px;
 }
@@ -235,8 +248,8 @@ td {
 
 @media (max-width: 920px) {
   .shell {
-    width: min(1200px, 98vw);
     margin: 0.8rem auto 1.2rem;
+    padding: 0 0.5rem;
   }
 
   .panel {
@@ -258,6 +271,11 @@ td {
   }
 
   .split.two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .grid.two,
+  .grid.three {
     grid-template-columns: 1fr;
   }
 }
@@ -285,8 +303,17 @@ td {
     grid-template-columns: 1fr;
   }
 
+  .panel-top-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-top-row select {
+    width: 100%;
+  }
+
   table {
-    min-width: 460px;
+    min-width: 420px;
   }
 
   .match-controls {
